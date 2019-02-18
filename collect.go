@@ -61,7 +61,7 @@ func sendMessage(name string)  {
 		fmt.Scanln(&msg)
 		b := []byte(name + ": " + msg)
 		
-		for conn, name :=  range conn_map{
+		for addr, conn :=  range send_map{
 			fmt.Println("About to send message")
 			_, err := conn.Write(b)
 			flag := checkErr(err)
@@ -72,7 +72,7 @@ func sendMessage(name string)  {
 
 			if flag == 0 {
 				fmt.Println("Flag = 0")
-				fmt.Println("occured when delivering to the following address", name)
+				fmt.Println("occured when delivering to the following address", addr)
 			}
 		}
 
@@ -140,7 +140,7 @@ func main(){
 	num_of_participants,_ := strconv.ParseInt(os.Args[3],0,64)
 	port_number := os.Args[2]
 	conn_map = make(map[*net.TCPConn]string)
-
+	send_map = make(map[string]*net.TCPConn)
 	go start_server(num_of_participants, port_number)
 
 	time.Sleep(5 * time.Second)
@@ -148,3 +148,4 @@ func main(){
 	go start_client(num_of_participants, port_number)
 	<-start_chan
 }
+
