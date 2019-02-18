@@ -5,65 +5,130 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
-var num_of_participants int
-var ConnMap map[string]*net.TCPConn
-var current_number_of_ports_registered int64
-var collected_ports string
-var ch_read_err chan int = make(chan int)
-var port_register = ":7998"
+var (
+	num_of_participants int
+	conn_map map[*net.TCPConn]string //for receving, not for sending
+	send_map map[string]*net.TCPConn
+	vm_addresses = []string{"10.192.137.227:7100","10.192.137.227:7200","10.192.137.227:7300","10.192.137.227:7400","10.192.137.227:7500",
+		"10.192.137.227:7600","10.192.137.227:7700","10.192.137.227:7800","10.192.137.227:7900","10.192.137.227:8000"}
+	name string
+	start_chan chan bool
+)
+
 
 func checkErr(err error) int {
 	if err != nil {
 		if err.Error() == "EOF" {
-			fmt.Println("用户退出")
 			return 0
 		}
-		fmt.Println("发生错误")
+		fmt.Println(err)
 		return -1
 	}
 	return 1
 }
 
-func readPortString(finished chan int, conn *net.TCPConn){
+func readMessage(conn *net.TCPConn){
+
 	buff := make([]byte, 256)
+	for {
+		j, err := conn.Read(buff)
 
-	j, err := conn.Read(buff)
-	if err != nil {
-		ch_read_err <- 1
-	} else {
-		fmt.Println("Other Ports are:", string(buff[0:j]))
+		if j > 0 {
+			s := strings.Split(string(buff[0:j]), ":")
+			user := s[0]
+
+			//Check user leave or error happen
+			flag := checkErr(err)
+			if flag == 0 {
+				fmt.Println(user + " has left")
+				break
+			}
+			fmt.Printf("%s\n", buff[0:j])
+		}
 	}
-
-	finished <- 1
 }
 
-func registerPort(tcpConn *net.TCPConn, capacity int64){
-	data := make([]byte, 256) 
-	total, err := tcpConn.Read(data) 
-	if err != nil {
-		fmt.Println(string(data[:total]), err)
-	} else {
-		temp_port := string(data[:5])
-		fmt.Println("Received Port Number:", temp_port)
-		current_number_of_ports_registered += 1	
-		collected_ports = collected_ports + temp_port	
+func sendMessage(name string)  {
+
+
+	for{
+		var msg string
+		fmt.Println("Please Input the message to be send:")
+		fmt.Scanln(&msg)
+		b := []byte(name + ": " + msg)
+		
+		for conn, name :=  range conn_map{
+			fmt.Println("About to send message")
+			_, err := conn.Write(b)
+			flag := checkErr(err)
+ 			
+ 			if err != nil{
+ 				fmt.Println("Error occured while sending message")
+ 			}
+
+			if flag == 0 {
+				fmt.Println("Flag = 0")
+				fmt.Println("occured when delivering to the following address", name)
+			}
+		}
+
 	}
-    
-	flag := checkErr(err)
-	if flag == 0 {
-		fmt.Println("接收时发生错误")
+}
+
+func start_server(num_of_participants int64, port_num string){
+
+	//Listen on a port that we specified
+	localhost := "10.192.137.227:" + port_num
+	tcp_addr, _ := net.ResolveTCPAddr("tcp", localhost)
+	tcp_listen, err := net.ListenTCP("tcp", tcp_addr)
+
+	if err != nil {
+		fmt.Println("Failed to listen on " + port_num)
 	}
 
-	if(current_number_of_ports_registered == capacity - 1){
-		print("First time reached here")
-		for _, conn := range ConnMap {
-			conn.Write([]byte(collected_ports))
-		}
-		fmt.Println("Reached Here:", current_number_of_ports_registered)
+	fmt.Println("Start listening on " + port_num)
+	// Accept Tcp connection from other VMs
+	for {
+
+		conn, _ := tcp_listen.AcceptTCP()
+		defer conn.Close()
+		conn_map[conn] = conn.RemoteAddr().String()
+		go readMessage(conn)
 	}
+
+}
+
+func start_client(num_of_participants int64, port_num string){
+
+	localhost := "10.192.137.227:" + port_num
+
+	fmt.Print("Please enter your name：")
+	fmt.Scanln(&name)
+	fmt.Println("Your name is：", name)
+
+	//Create TCP connection to other VMs
+	for i := int64(0); i < num_of_participants; i++{
+		if vm_addresses[i] != localhost {
+			tcp_add, _ := net.ResolveTCPAddr("tcp", vm_addresses[i])
+			conn, err := net.DialTCP("tcp", nil, tcp_add)
+			if err != nil {
+				fmt.Println("Service unavailable on " + vm_addresses[i])
+				continue
+			}
+			send_map[vm_addresses[i]] = conn
+			defer conn.Close()
+			// go function for chat, finished later
+		}
+	}
+
+	go sendMessage(name)
+
+	fmt.Println("Ready")
+	<-start_chan
 }
 
 func main(){
@@ -72,44 +137,14 @@ func main(){
 		os.Exit(1)
 	}
 
-	finished := make(chan int)
 	num_of_participants,_ := strconv.ParseInt(os.Args[3],0,64)
 	port_number := os.Args[2]
-	port_number = ":" + port_number
+	conn_map = make(map[*net.TCPConn]string)
 
-	if(port_number == ":7998"){
-		tcpAddr, _ := net.ResolveTCPAddr("tcp", "127.0.0.1:7998")
-		tcpListen, _ := net.ListenTCP("tcp", tcpAddr)
-		ConnMap = make(map[string]*net.TCPConn)
-		//Listen for TCP networks
-		var i int64;
-		go func(){
-			for i= 0; i < num_of_participants-1; i++ {
-				tcpConn, _ := tcpListen.AcceptTCP()
-				defer tcpConn.Close()
-				ConnMap[tcpConn.RemoteAddr().String()] = tcpConn
-				fmt.Println("连接客户端信息：", tcpConn.RemoteAddr().String())
-				registerPort(tcpConn, num_of_participants)
-			}
-		}()
-		time.Sleep(5*time.Second)
-	} else {
-		TcpAdd, _ := net.ResolveTCPAddr("tcp", port_register)
-		conn, err := net.DialTCP("tcp", nil, TcpAdd)
+	go start_server(num_of_participants, port_number)
 
-		if err != nil {
-			fmt.Println("The servers is currently closed")
-			os.Exit(1)
-		}
+	time.Sleep(5 * time.Second)
 
-		sendbyte := []byte(port_number)
-		conn.Write(sendbyte)
-
-		defer conn.Close()
-		fmt.Println("Create A goroutine for reading port string")
-		go readPortString(finished, conn)
-		<-finished
-	}
-
-	fmt.Println("READY")
+	go start_client(num_of_participants, port_number)
+	<-start_chan
 }
