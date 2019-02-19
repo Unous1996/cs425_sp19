@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-type standard_message struct {
+type Wrap struct {
 	ip_address string
 	sender_name string
 	vector [] int
@@ -38,7 +38,7 @@ var (
 		"10.192.137.227:7600","10.192.137.227:7700","10.192.137.227:7800","10.192.137.227:7900","10.192.137.227:8000"}
 	vector = []int{0,0,0,0,0,0,0,0,0,0}
 	start_chan chan bool
-	holdback_queue = []standard_message{}
+	holdback_queue = []Wrap{}
 )
 
 func checkErr(err error) int {
@@ -77,13 +77,34 @@ func deserialize(str string) []int{
 func vector_accack(attacker []int, update int) {
 	for i := 0; i < len(vector); i++ {
 		if(i == update) {
-			vector[i] += 1
+			vector[i] += 0
 		} else {
 			if(attacker[i] > vector[i]) {
 				vector[i] = attacker[i]
 			}
 		}
 	}
+}
+
+func deliver(received_vector []int, update int, deliver_string string){
+	vector_accack(received_vector, update)
+	fmt.Println(deliver_string)
+}
+
+func able_to_deliver(received_vector []int, source_index int) bool{
+	result := true
+	for i := 0; i < len(vector); i++{
+		if(i == source_index){
+			if(received_vector[i] != vector[i] + 1){
+				return false;
+			}
+		} else {
+			if(received_vector[i] != vector[i]){
+				return false;
+			}
+		}
+	}
+	return result
 }
 
 func readMessage(conn *net.TCPConn){
@@ -101,13 +122,36 @@ func readMessage(conn *net.TCPConn){
 		}
 
 		recevied_string_spilt := strings.Split(string(buff[0:j]), ";")
-
+		received_ip_address := recevied_string_spilt[1]
 		received_name := recevied_string_spilt[2]
 		received_message := recevied_string_spilt[3]
 		received_vector := deserialize(recevied_string_spilt[0])
+		deliver_string := received_name + ":" + received_message
 
-		vector_accack(received_vector, name_2_vector_index[own_name])
-		fmt.Println(received_name + ":" + received_message)
+		if(able_to_deliver(received_vector, name_2_vector_index[received_name])){
+			deliver(received_vector, name_2_vector_index[own_name], deliver_string)
+
+			for{
+				again := false
+				for it:= 0; it < len(holdback_queue); it++ {
+					if(it > len(holdback_queue)-1){
+						break
+					}
+					object := holdback_queue[it]
+					if(able_to_deliver(object.vector, name_2_vector_index[object.sender_name])){
+						deliver(object.vector, name_2_vector_index[object.sender_name], object.message)
+						again = true;
+					}
+				}
+				if(again == false){
+					break;
+				}
+			}
+
+		} else {
+			Temp := Wrap{received_ip_address, received_name, received_vector, received_message}
+			holdback_queue = append(holdback_queue, Temp)
+		}
 		for i := 0; i < len(vector); i++ {
 			fmt.Println("vector = ", vector[i])
 		}
@@ -123,7 +167,7 @@ func multicast(name string)  {
 		send_vector := serialize(vector)
 		send_string = send_vector + ";" + local_ip_address + ";" + name + ";" + msg
 		b := []byte(send_string)
-		
+
 		for _, conn := range send_map {
 			if conn.RemoteAddr().String() == localhost {
 				continue
