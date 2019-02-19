@@ -30,13 +30,14 @@ var (
 	send_map map[string]*net.TCPConn
 	remote_ip_2_name map[string]string
 	conn_2_port_num map[*net.TCPConn]string
+	has_sent_name map[*net.TCPConn]bool
 	port_2_vector_index map[string]int
 	name_2_vector_index map[string]int
 )
 
 var (
-	vm_addresses = []string{"10.180.129.254:7100","10.180.129.254:7200","10.180.129.254:7300","10.180.129.254:7400","10.180.129.254:7500",
-		"10.180.129.254:7600","10.180.129.254:7700","10.180.129.254:7800","10.180.129.254:7900","10.180.129.254:8000"}
+	vm_addresses = []string{"10.192.137.227:7100","10.192.137.227:7200","10.192.137.227:7300","10.192.137.227:7400","10.192.137.227:7500",
+		"10.192.137.227:7600","10.192.137.227:7700","10.192.137.227:7800","10.192.137.227:7900","10.192.137.227:8000"}
 	vector = []int{0,0,0,0,0,0,0,0,0,0}
 	start_chan chan bool
 	holdback_queue = []Wrap{}
@@ -123,6 +124,13 @@ func readMessage(conn *net.TCPConn){
 		}
 
 		recevied_string_spilt := strings.Split(string(buff[0:j]), ";")
+
+		if(recevied_string_spilt[0] == "NAME"){
+			fmt.Println("#" + recevied_string_spilt[1] + "(Address:" + conn.RemoteAddr().String() + ")"+ " has joined the chat")
+			remote_ip_2_name[strings.Split(conn.RemoteAddr().String(),":")[0]] = recevied_string_spilt[1]
+			continue
+		}
+
 		received_ip_address := recevied_string_spilt[1]
 		received_name := recevied_string_spilt[2]
 		received_message := recevied_string_spilt[3]
@@ -180,12 +188,30 @@ func multicast(name string)  {
 			conn.Write(b)
 		}
 
-
 		for i := 0; i < len(vector); i++ {
 			fmt.Println("vector = ", vector[i])
 		}
-		//fmt.Println(vector[port_2_vector_index[port_number]])
 	}
+}
+
+func multicast_name(name string){
+	for{
+		var msg string
+		var send_string string
+		
+		msg = name
+		send_string = "NAME" + ";" + msg
+		b := []byte(send_string)
+
+		for _, conn := range send_map {
+			if conn.RemoteAddr().String() == localhost || has_sent_name[conn]{
+				continue
+			}
+			conn.Write(b)
+			has_sent_name[conn] = true
+		}
+
+	}	
 }
 
 func start_server(port_num string){
@@ -244,6 +270,7 @@ func main(){
 	conn_2_port_num = make(map[*net.TCPConn]string)
 	port_2_vector_index = make(map[string]int)
 	name_2_vector_index = make(map[string]int)
+	has_sent_name = make(map[*net.TCPConn]bool)
 
 	port_2_vector_index = map[string]int{
 		"7100": 0,
@@ -271,12 +298,8 @@ func main(){
 		"Jim": 9,
 	}
 
-	remote_ip_2_name = map[string]string{
-		"10.180.129.254": "Alice",
-	}
-
 	//Listen on a port that we specified
-	local_ip_address = "10.180.129.254:"
+	local_ip_address = "10.192.137.227:"
 	localhost = local_ip_address + port_number
 
 	fmt.Println("Start server...")
@@ -287,6 +310,7 @@ func main(){
 	fmt.Println("Start client...")
 	go start_client(num_of_participants)
 
+	go multicast_name(own_name)
 	go multicast(own_name)
 	<-start_chan
 }
