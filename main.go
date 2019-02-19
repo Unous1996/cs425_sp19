@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"bufio"
 )
 
 type Wrap struct {
@@ -34,8 +35,8 @@ var (
 )
 
 var (
-	vm_addresses = []string{"10.192.137.227:7100","10.192.137.227:7200","10.192.137.227:7300","10.192.137.227:7400","10.192.137.227:7500",
-		"10.192.137.227:7600","10.192.137.227:7700","10.192.137.227:7800","10.192.137.227:7900","10.192.137.227:8000"}
+	vm_addresses = []string{"10.180.129.254:7100","10.180.129.254:7200","10.180.129.254:7300","10.180.129.254:7400","10.180.129.254:7500",
+		"10.180.129.254:7600","10.180.129.254:7700","10.180.129.254:7800","10.180.129.254:7900","10.180.129.254:8000"}
 	vector = []int{0,0,0,0,0,0,0,0,0,0}
 	start_chan chan bool
 	holdback_queue = []Wrap{}
@@ -162,7 +163,11 @@ func multicast(name string)  {
 	for{
 		var msg string
 		var send_string string
-		fmt.Scanln(&msg)
+		
+		in := bufio.NewReader(os.Stdin)
+		msg, _ = in.ReadString('\n')
+
+		fmt.Println("The message that you are about to deliver is:", msg)
 		vector[port_2_vector_index[port_number]] += 1
 		send_vector := serialize(vector)
 		send_string = send_vector + ";" + local_ip_address + ";" + name + ";" + msg
@@ -267,11 +272,11 @@ func main(){
 	}
 
 	remote_ip_2_name = map[string]string{
-		"10.192.137.227": "Alice",
+		"10.180.129.254": "Alice",
 	}
 
 	//Listen on a port that we specified
-	local_ip_address = "10.192.137.227:"
+	local_ip_address = "10.180.129.254:"
 	localhost = local_ip_address + port_number
 
 	fmt.Println("Start server...")
