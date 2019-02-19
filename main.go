@@ -32,6 +32,7 @@ var (
 	conn_2_port_num map[*net.TCPConn]string
 	ip_2_vectorindex map[string]int
 	name_2_vector_index map[string]int
+	has_send_name map[*net.TCPConn]bool
 )
 
 var (
@@ -159,6 +160,28 @@ func readMessage(conn *net.TCPConn){
 	}
 }
 
+func multicast_name(name string){
+	for{
+		var msg string
+		var send_string string
+		
+		msg = name
+
+		fmt.Println("The message that you are about to deliver is:", msg)
+		vector[ip_2_vectorindex[port_number]] += 1
+		send_vector := serialize(vector)
+		send_string = send_vector + ";" + local_ip_address + ";" + name + ";" + msg
+		b := []byte(send_string)
+
+		for _, conn := range send_map {
+			if conn.RemoteAddr().String() == localhost && {
+				continue
+			}
+			conn.Write(b)
+		}
+	}
+}
+
 func multicast(name string)  {
 	for{
 		var msg string
@@ -180,11 +203,9 @@ func multicast(name string)  {
 			conn.Write(b)
 		}
 
-
 		for i := 0; i < len(vector); i++ {
-			fmt.Println("vector = ", vector[i])
+			fmt.Println("#vector = ", vector[i])
 		}
-		//fmt.Println(vector[ip_2_vectorindex[port_number]])
 	}
 }
 
@@ -245,6 +266,7 @@ func main(){
 	ip_2_vectorindex = make(map[string]int)
 	name_2_vector_index = make(map[string]int)
 
+	//Find virtual machine address here
 	ip_2_vectorindex = map[string]int{
 		"172.22.156.52": 0,
 		"172.22.158.52": 1,
@@ -290,3 +312,4 @@ func main(){
 	go multicast(own_name)
 	<-start_chan
 }
+
