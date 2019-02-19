@@ -1,5 +1,5 @@
 package main
- "THIS IS REMOTE"
+ 
 import (
 	"fmt"
 	"net"
@@ -30,7 +30,7 @@ var (
 	send_map map[string]*net.TCPConn
 	remote_ip_2_name map[string]string
 	conn_2_port_num map[*net.TCPConn]string
-	port_2_vector_index map[string]int
+	ip_2_vectorindex map[string]int
 	name_2_vector_index map[string]int
 )
 
@@ -168,7 +168,7 @@ func multicast(name string)  {
 		msg, _ = in.ReadString('\n')
 
 		fmt.Println("The message that you are about to deliver is:", msg)
-		vector[port_2_vector_index[port_number]] += 1
+		vector[ip_2_vectorindex[port_number]] += 1
 		send_vector := serialize(vector)
 		send_string = send_vector + ";" + local_ip_address + ";" + name + ";" + msg
 		b := []byte(send_string)
@@ -184,7 +184,7 @@ func multicast(name string)  {
 		for i := 0; i < len(vector); i++ {
 			fmt.Println("vector = ", vector[i])
 		}
-		//fmt.Println(vector[port_2_vector_index[port_number]])
+		//fmt.Println(vector[ip_2_vectorindex[port_number]])
 	}
 }
 
@@ -194,10 +194,10 @@ func start_server(port_num string){
 	tcp_listen, err := net.ListenTCP("tcp", tcp_addr)
 
 	if err != nil {
-		fmt.Println("Failed to listen on " + port_num)
+		fmt.Println("#Failed to listen on " + port_num)
 	}
 
-	fmt.Println("Start listening on " + port_num)
+	fmt.Println("#Start listening on " + port_num)
 	// Accept Tcp connection from other VMs
 	for {
 		conn, _ := tcp_listen.AcceptTCP()
@@ -216,7 +216,7 @@ func start_client(num_of_participants int64){
 			tcp_add, _ := net.ResolveTCPAddr("tcp", vm_addresses[i])
 			conn, err := net.DialTCP("tcp", nil, tcp_add)
 			if err != nil {
-				fmt.Println("Service unavailable on " + vm_addresses[i])
+				fmt.Println("#Service unavailable on " + vm_addresses[i])
 				continue
 			}
 			defer conn.Close()
@@ -242,20 +242,20 @@ func main(){
 	send_map = make(map[string]*net.TCPConn)
 	remote_ip_2_name = make(map[string]string)
 	conn_2_port_num = make(map[*net.TCPConn]string)
-	port_2_vector_index = make(map[string]int)
+	ip_2_vectorindex = make(map[string]int)
 	name_2_vector_index = make(map[string]int)
 
-	port_2_vector_index = map[string]int{
-		"7100": 0,
-		"7200": 1,
-		"7300": 2,
-		"7400": 3,
-		"7500": 4,
-		"7600": 5,
-		"7700": 6,
-		"7800": 7,
-		"7900": 8,
-		"8000": 9,
+	ip_2_vectorindex = map[string]int{
+		"172.22.156.52": 0,
+		"172.22.158.52": 1,
+		"172.22.94.61": 2,
+		"172.22.156.53": 3,
+		"172.22.158.53": 4,
+		"172.22.94.62": 5,
+		"172.22.156.54": 6,
+		"172.22.158.54": 7,
+		"172.22.94.63": 8,
+		"172.22.156.55": 9,
 	}
 
 	name_2_vector_index = map[string]int{
