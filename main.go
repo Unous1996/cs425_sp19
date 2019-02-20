@@ -31,13 +31,12 @@ var (
 	remote_ip_2_name map[string]string
 	conn_2_port_num map[*net.TCPConn]string
 	has_sent_name map[*net.TCPConn]bool
-	port_2_vector_index map[string]int
-	name_2_vector_index map[string]int
+	ip_2_vectorindex map[string]int
 )
 
 var (
-	vm_addresses = []string{"10.192.137.227:7100","10.192.137.227:7200","10.192.137.227:7300","10.192.137.227:7400","10.192.137.227:7500",
-		"10.192.137.227:7600","10.192.137.227:7700","10.192.137.227:7800","10.192.137.227:7900","10.192.137.227:8000"}
+	vm_addresses = []string{"172.22.156.52:4444","172.22.158.52:4444","172.22.94.61:4444","172.22.156.53:4444","172.22.158.53:4444",
+		"172.22.94.62:4444","172.22.156.54:4444","172.22.158.54:4444","172.22.94.63:4444","172.22.156.55:4444"}
 	vector = []int{0,0,0,0,0,0,0,0,0,0}
 	start_chan chan bool
 	holdback_queue = []Wrap{}
@@ -137,8 +136,8 @@ func readMessage(conn *net.TCPConn){
 		received_vector := deserialize(recevied_string_spilt[0])
 		deliver_string := received_name + ":" + received_message
 
-		if(able_to_deliver(received_vector, name_2_vector_index[received_name])){
-			deliver(received_vector, name_2_vector_index[own_name], deliver_string)
+		if(able_to_deliver(received_vector, ip_2_vectorindex[received_ip_address])){
+			deliver(received_vector, ip_2_vectorindex[local_ip_address], deliver_string)
 
 			for{
 				again := false
@@ -147,8 +146,8 @@ func readMessage(conn *net.TCPConn){
 						break
 					}
 					object := holdback_queue[it]
-					if(able_to_deliver(object.vector, name_2_vector_index[object.sender_name])){
-						deliver(object.vector, name_2_vector_index[object.sender_name], object.message)
+					if(able_to_deliver(object.vector, ip_2_vectorindex[object.ip_address])){
+						deliver(object.vector, ip_2_vectorindex[object.ip_address], object.message)
 						again = true;
 					}
 				}
@@ -176,7 +175,7 @@ func multicast(name string)  {
 		msg, _ = in.ReadString('\n')
 
 		fmt.Println("The message that you are about to deliver is:", msg)
-		vector[port_2_vector_index[port_number]] += 1
+		vector[ip_2_vectorindex[local_ip_address]] += 1
 		send_vector := serialize(vector)
 		send_string = send_vector + ";" + local_ip_address + ";" + name + ";" + msg
 		b := []byte(send_string)
@@ -268,38 +267,24 @@ func main(){
 	send_map = make(map[string]*net.TCPConn)
 	remote_ip_2_name = make(map[string]string)
 	conn_2_port_num = make(map[*net.TCPConn]string)
-	port_2_vector_index = make(map[string]int)
-	name_2_vector_index = make(map[string]int)
+	ip_2_vectorindex = make(map[string]int)
 	has_sent_name = make(map[*net.TCPConn]bool)
 
-	port_2_vector_index = map[string]int{
-		"7100": 0,
-		"7200": 1,
-		"7300": 2,
-		"7400": 3,
-		"7500": 4,
-		"7600": 5,
-		"7700": 6,
-		"7800": 7,
-		"7900": 8,
-		"8000": 9,
-	}
-
-	name_2_vector_index = map[string]int{
-		"Alice": 0,
-		"Bob": 1,
-		"Cindy": 2,
-		"Dick": 3,
-		"Edgar": 4,
-		"Fred": 5,
-		"George": 6,
-		"Henry": 7,
-		"Ian": 8,
-		"Jim": 9,
+	ip_2_vectorindex = map[string]int{
+		"172.22.156.52": 0,
+		"172.22.158.52": 1,
+		"172.22.94.61": 2,
+		"172.22.156.53": 3,
+		"172.22.158.53": 4,
+		"172.22.94.62": 5,
+		"172.22.156.54": 6,
+		"172.22.158.54": 7,
+		"172.22.94.63": 8,
+		"172.22.156.55": 9,
 	}
 
 	//Listen on a port that we specified
-	local_ip_address = "10.192.137.227:"
+	local_ip_address = "10.192.137.227:" // Different for each virtual machine
 	localhost = local_ip_address + port_number
 
 	fmt.Println("Start server...")
