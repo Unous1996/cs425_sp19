@@ -135,7 +135,7 @@ func readMessage(conn *net.TCPConn){
 		received_message := recevied_string_spilt[3]
 		received_vector := deserialize(recevied_string_spilt[0])
 		deliver_string := received_name + ":" + received_message
-
+		fmt.Println("received_ip_address = ", received_ip_address)
 		if(able_to_deliver(received_vector, ip_2_vectorindex[received_ip_address])){
 			deliver(received_vector, ip_2_vectorindex[local_ip_address], deliver_string)
 
@@ -157,6 +157,7 @@ func readMessage(conn *net.TCPConn){
 			}
 
 		} else {
+			fmt.Println("Failed to Deliver the Message")
 			Temp := Wrap{received_ip_address, received_name, received_vector, received_message}
 			holdback_queue = append(holdback_queue, Temp)
 		}
@@ -283,8 +284,23 @@ func main(){
 		"172.22.156.55": 9,
 	}
 
+	addrs, err := net.InterfaceAddrs()
+    	if err != nil {
+        	fmt.Println(err)
+        	os.Exit(1)
+    	}
+	for _, address := range addrs {
+       
+        if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+            	if ipnet.IP.To4() != nil {
+			local_ip_address = ipnet.IP.String()
+                	fmt.Println("The local ip address is:", ipnet.IP.String())
+            	}
+        	}
+    	}
+
 	//Listen on a port that we specified
-	local_ip_address = "10.192.137.227:" // Different for each virtual machine
+	local_ip_address += ":" // Different for each virtual machine
 	localhost = local_ip_address + port_number
 
 	fmt.Println("Start server...")
