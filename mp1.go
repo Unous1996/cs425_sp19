@@ -297,16 +297,16 @@ func main(){
 	has_sent_name = make(map[*net.TCPConn]bool)
 
 	ip_2_vectorindex = map[string]int{
-		"172.22.156.52:": 0,
-		"172.22.158.52:": 1,
-		"172.22.94.61:": 2,
-		"172.22.156.53:": 3,
-		"172.22.158.53:": 4,
-		"172.22.94.62:": 5,
-		"172.22.156.54:": 6,
-		"172.22.158.54:": 7,
-		"172.22.94.63:": 8,
-		"172.22.156.55:": 9,
+		"172.22.156.52": 0,
+		"172.22.158.52": 1,
+		"172.22.94.61": 2,
+		"172.22.156.53": 3,
+		"172.22.158.53": 4,
+		"172.22.94.62": 5,
+		"172.22.156.54": 6,
+		"172.22.158.54": 7,
+		"172.22.94.63": 8,
+		"172.22.156.55": 9,
 	}
 
 	addrs, err := net.InterfaceAddrs()
@@ -325,8 +325,8 @@ func main(){
     }
 
 	//Listen on a port that we specified
-	local_ip_address += ":" // Different for each virtual machine
-	localhost = local_ip_address + port_number
+	local_ip_address // Different for each virtual machine
+	localhost = local_ip_address + ":" +port_number
 	fmt.Println("Your assigned index is:", ip_2_vectorindex[local_ip_address])
 	fmt.Println("#Start server...")
 	go start_server(port_number)
