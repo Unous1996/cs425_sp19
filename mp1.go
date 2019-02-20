@@ -264,6 +264,7 @@ func start_client(num_of_participants int64){
 	//Create TCP connection to other VMs
 	for i := int64(0); i < num_of_participants; i++{
 		if vm_addresses[i] != localhost {
+			fmt.Println("Registering address:", vm_addresses[i])
 			tcp_add, _ := net.ResolveTCPAddr("tcp", vm_addresses[i])
 			conn, err := net.DialTCP("tcp", nil, tcp_add)
 			if err != nil {
@@ -273,7 +274,7 @@ func start_client(num_of_participants int64){
 			defer conn.Close()
 			send_map[conn.RemoteAddr().String()] = conn
 		}
-	}
+	} 
 
 	fmt.Println("Ready")
 	<-start_chan
@@ -323,7 +324,7 @@ func main(){
             }
         }
     }
-
+	
 	//Listen on a port that we specified
 
 	localhost = local_ip_address + ":" +port_number
