@@ -156,7 +156,8 @@ func readMessage(conn *net.TCPConn){
 
 		if(able_to_deliver(received_vector, ip_2_vectorindex[received_ip_address])){
 			deliver(received_vector, ip_2_vectorindex[local_ip_address], deliver_string)
-
+			fmt.Println("local_ip_address = ", local_ip_address)
+			fmt.Println("ip_2_vectorindex[local_ip_address] = ", ip_2_vectorindex[local_ip_address])
 			fmt.Println("#After incrementing, your vector is")
 			printVector()
 
