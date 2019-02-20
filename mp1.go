@@ -44,7 +44,7 @@ var (
 
 func printVector() {
 	for i := 0; i < len(vector); i++ {
-		fmt.Println("vector = ", vector[i])
+		fmt.Println("vector[", i , "]=", vector[i])
 	}
 }
 
@@ -141,9 +141,15 @@ func readMessage(conn *net.TCPConn){
 		received_message := recevied_string_spilt[3]
 		received_vector := deserialize(recevied_string_spilt[0])
 		deliver_string := received_name + ":" + received_message
-		fmt.Println("received_ip_address = ", received_ip_address)
+		fmt.Println("#Before incrementing, your vector is")
+		printVector()
+
+
 		if(able_to_deliver(received_vector, ip_2_vectorindex[received_ip_address])){
 			deliver(received_vector, ip_2_vectorindex[local_ip_address], deliver_string)
+
+			fmt.Println("#After incrementing, your vector is")
+			printVector()
 
 			for{
 				again := false
@@ -180,8 +186,10 @@ func multicast(name string)  {
 
 		fmt.Println("The message that you are about to deliver is:", msg)
 		vector[ip_2_vectorindex[local_ip_address]] += 1
+		fmt.Println("You are incrementing index:", ip_2_vectorindex[local_ip_address])
 		fmt.Println("After Incrementing, your vector became:\n")
 		printVector()
+
 		send_vector := serialize(vector)
 		send_string = send_vector + ";" + local_ip_address + ";" + name + ";" + msg
 		b := []byte(send_string)
@@ -198,8 +206,6 @@ func multicast(name string)  {
 			fmt.Println("vector = ", vector[i])
 		}
 		*/
-
-		
 	}
 }
 
@@ -298,7 +304,7 @@ func main(){
         	fmt.Println(err)
         	os.Exit(1)
     	}
-
+    
 	for _, address := range addrs {
         if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
             if ipnet.IP.To4() != nil {
@@ -311,13 +317,13 @@ func main(){
 	//Listen on a port that we specified
 	local_ip_address += ":" // Different for each virtual machine
 	localhost = local_ip_address + port_number
-
-	fmt.Println("Start server...")
+	fmt.Println("Your assigned index is:", ip_2_vectorindex[local_ip_address])
+	fmt.Println("#Start server...")
 	go start_server(port_number)
 
 	time.Sleep(5 * time.Second)
 
-	fmt.Println("Start client...")
+	fmt.Println("#Start client...")
 	go start_client(num_of_participants)
 
 	go multicast_name(own_name)
