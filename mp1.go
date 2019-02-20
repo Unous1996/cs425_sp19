@@ -325,7 +325,7 @@ func main(){
     }
 
 	//Listen on a port that we specified
-	local_ip_address // Different for each virtual machine
+
 	localhost = local_ip_address + ":" +port_number
 	fmt.Println("Your assigned index is:", ip_2_vectorindex[local_ip_address])
 	fmt.Println("#Start server...")
