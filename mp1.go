@@ -44,7 +44,13 @@ var (
 
 func printVector() {
 	for i := 0; i < len(vector); i++ {
-		fmt.Println("vector[", i , "]=", vector[i])
+		fmt.Println("#vector[", i , "]=", vector[i])
+	}
+}
+
+func printArbitiaryVector(vec []int, vecname string){
+	for i := 0; i < len(vector); i++ {
+		fmt.Println("#" + vecname + "[", i , "]=", vec[i])
 	}
 }
 
@@ -82,6 +88,9 @@ func deserialize(str string) []int{
 }
 
 func vector_accack(attacker []int, update int) {
+	fmt.Println("#update = ", update)
+	printVector()
+	printArbitiaryVector(attacker, "attacker")
 	for i := 0; i < len(vector); i++ {
 		if(i == update) {
 			vector[i] += 0
