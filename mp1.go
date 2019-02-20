@@ -42,6 +42,12 @@ var (
 	holdback_queue = []Wrap{}
 )
 
+func printVector() {
+	for i := 0; i < len(vector); i++ {
+		fmt.Println("vector = ", vector[i])
+	}
+}
+
 func checkErr(err error) int {
 	if err != nil {
 		if err.Error() == "EOF" {
@@ -161,9 +167,6 @@ func readMessage(conn *net.TCPConn){
 			Temp := Wrap{received_ip_address, received_name, received_vector, received_message}
 			holdback_queue = append(holdback_queue, Temp)
 		}
-		for i := 0; i < len(vector); i++ {
-			fmt.Println("vector = ", vector[i])
-		}
 	}
 }
 
@@ -177,6 +180,8 @@ func multicast(name string)  {
 
 		fmt.Println("The message that you are about to deliver is:", msg)
 		vector[ip_2_vectorindex[local_ip_address]] += 1
+		fmt.Println("After Incrementing, your vector became:\n")
+		printVector()
 		send_vector := serialize(vector)
 		send_string = send_vector + ";" + local_ip_address + ";" + name + ";" + msg
 		b := []byte(send_string)
@@ -188,9 +193,13 @@ func multicast(name string)  {
 			conn.Write(b)
 		}
 
+		/*
 		for i := 0; i < len(vector); i++ {
 			fmt.Println("vector = ", vector[i])
 		}
+		*/
+
+		
 	}
 }
 
@@ -289,15 +298,15 @@ func main(){
         	fmt.Println(err)
         	os.Exit(1)
     	}
+
 	for _, address := range addrs {
-       
         if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-            	if ipnet.IP.To4() != nil {
+            if ipnet.IP.To4() != nil {
 			local_ip_address = ipnet.IP.String()
-                	fmt.Println("The local ip address is:", ipnet.IP.String())
-            	}
-        	}
-    	}
+                fmt.Println("The local ip address is:", ipnet.IP.String())
+            }
+        }
+    }
 
 	//Listen on a port that we specified
 	local_ip_address += ":" // Different for each virtual machine
