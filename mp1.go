@@ -259,19 +259,19 @@ func start_server(port_num string){
 	}
 }
 
-func start_client(num_of_participants int64){
+func start_client(){
 
 	//Create TCP connection to other VMs
 	for i := int64(0); i < 10; i++{
 		if vm_addresses[i] != localhost {
-			fmt.Println("Registering address:", vm_addresses[i])
 			tcp_add, _ := net.ResolveTCPAddr("tcp", vm_addresses[i])
 			conn, err := net.DialTCP("tcp", nil, tcp_add)
 			if err != nil {
-				fmt.Println("Service unavailable on " + vm_addresses[i])
+				fmt.Println("#Service unavailable on " + vm_addresses[i])
 				continue
 			}
 			defer conn.Close()
+			fmt.Println("#Registered send map for:", conn.RemoteAddr().String())
 			send_map[conn.RemoteAddr().String()] = conn
 		}
 	} 
@@ -335,7 +335,7 @@ func main(){
 	time.Sleep(5 * time.Second)
 
 	fmt.Println("#Start client...")
-	go start_client(num_of_participants)
+	go start_client()
 
 	go multicast_name(own_name)
 	go multicast(own_name)
