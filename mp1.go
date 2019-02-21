@@ -262,7 +262,7 @@ func start_server(port_num string){
 func start_client(num_of_participants int64){
 
 	//Create TCP connection to other VMs
-	for i := int64(0); i < num_of_participants; i++{
+	for i := int64(0); i < 10; i++{
 		if vm_addresses[i] != localhost {
 			fmt.Println("Registering address:", vm_addresses[i])
 			tcp_add, _ := net.ResolveTCPAddr("tcp", vm_addresses[i])
